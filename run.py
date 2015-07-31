@@ -5,13 +5,13 @@ import time
 
 from features import featurizer
 from sklearn.metrics import accuracy_score
-from models import Baseline, Keyword
+from models import Baseline, Keyword, NaiveBayes
 from utils import sick_test_reader, sick_dev_reader, \
    sick_train_reader, leaves
 
 
 
-def evaluateModel(model, reader):
+def evaluateModel(model, modelName, reader):
    if reader == sick_dev_reader:
       dataSet = "dev"
    elif reader == sick_test_reader:
@@ -21,16 +21,22 @@ def evaluateModel(model, reader):
 
    predictions = []
    goldLabels = []
-   count = 0
-   for label, t1, t2 in reader():
-      if count % 10 == 0:
-         print "Processed %d examples" %(count)
-      goldLabels.append(label)
-      s1 = " ".join(leaves(t1))
-      s2 = " ".join(leaves(t2))
-      modelPredict = model.predict(s1, s2)
-      predictions.append(modelPredict)
-      count += 1
+   if modelName == "NB":
+      model.train()
+      for label, t1, t2 in reader():
+         goldLabels.append(label)
+      predictions = model.predictAll(reader)
+   else:
+      count = 0
+      for label, t1, t2 in reader():
+         if count % 10 == 0:
+            print "Processed %d examples" %(count)
+         goldLabels.append(label)
+         s1 = " ".join(leaves(t1))
+         s2 = " ".join(leaves(t2))
+         modelPredict = model.predict(s1, s2)
+         predictions.append(modelPredict)
+         count += 1
 
    accuracy = accuracy_score(predictions, goldLabels)
    print "Accuracy on SICK %s set: %f" %(dataSet, accuracy)
@@ -41,14 +47,16 @@ if __name__ == "__main__":
    parser.add_argument("--model",
                        type=str,
                        default="baseline",
-                       help="name of model to use for system")
+                       help="Name of model to use for system")
    args = parser.parse_args()
 
    if args.model == "baseline":
       model = Baseline("cosineSimilarity", ["keyword_overlap"])
    elif args.model == "keyword":
       model = Keyword("cosineSimilarity", ["keyword_overlap"])
+   elif args.model == "NB":
+      model = NaiveBayes("cosineSimilarity", ["keyword_overlap"])
 
    start = time.time()
-   evaluateModel(model, sick_dev_reader)
+   evaluateModel(model, args.model, sick_dev_reader)
    print "Evaluation done in %f seconds" %(time.time() - start)

@@ -19,8 +19,12 @@ class Model(object):
     def train(self):
         raise NotImplementedError
 
-    def predict(self):
+    def predict(self, s1, s2):
+        """A single sentence pair."""
         raise NotImplementedError
+
+    def predictAll(self, feats):
+        """Predict labels for all samples in a feature list."""
 
 
 
@@ -63,6 +67,9 @@ class Baseline(Model):
             return "NEUTRAL"
         else:
             return "ENTAILMENT"
+
+    def predictAll(self, feats):
+        pass
 
 
 
@@ -109,6 +116,8 @@ class Keyword(Model):
         else:
             return "ENTAILMENT"
 
+    def predictAll(self, feats):
+        pass
 
 
 class NaiveBayes(Model):
@@ -127,4 +136,11 @@ class NaiveBayes(Model):
 
     def predict(self, s1, s2):
         pass
+
+    def predictAll(self, reader):
+        """Prediction function for all features from a certain reader."""
+        feats, labels = featurizer(reader, self.featureFuncs,
+                                   self.client)
+        featMat = self.dictVectorizer.transform(feats)
+        return self.classifier.predict(featMat)
 
